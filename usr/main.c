@@ -21,13 +21,18 @@ int main(void)
     {
         printf("%04x\r\n", ETH_ReadPHYRegister(ETHERNET_PHY_ADDRESS, i));
     }
+    printf("system inited!\r\n");
     while (1)
     {
         delay_ms(500);
         GPIO_ToggleBits(GPIOF, GPIO_Pin_8);
-        printf("system inited!");
     };
 
 }
+
+uint32_t sys_now(void)
+ {
+     return HAL_GetTick();
+ }
 
 

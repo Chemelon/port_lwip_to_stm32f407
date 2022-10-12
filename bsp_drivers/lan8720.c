@@ -2,6 +2,7 @@
 #include "stm32f4xx.h"
 #include "stm32f4x7_eth.h"
 #include "delay.h"
+#include "lwipopts.h"
 //#include "lwipopts.h"
 //#include "netif.h"
 //#include "lwip/ip_addr.h"
@@ -165,8 +166,6 @@ void lan8720_mac_init(void)
     EthStatus = ETH_Init(&ETH_InitStructure, ETHERNET_PHY_ADDRESS);
 
 }
-
-
 
 #if 0
 /**
