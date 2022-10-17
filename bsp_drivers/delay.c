@@ -41,7 +41,7 @@ void delay_ms(uint32_t ms)
 #endif
 }
 /*Ω´TIM6≈‰÷√≥…100us÷–∂œ*/
-void TIM6_100us_it_init(void)
+void TIM6_it_init(void)
 {
     NVIC_InitTypeDef NVIC_InitStructure;
     

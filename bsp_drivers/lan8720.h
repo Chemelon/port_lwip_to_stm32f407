@@ -1,12 +1,11 @@
 #ifndef     __LAN8720_H
 #define     __LAN8720_H
 
-//#include "lwip/ip_addr.h"
 
 /*Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
 #define IP_ADDR0                    192
 #define IP_ADDR1                    168
-#define IP_ADDR2                    137
+#define IP_ADDR2                    123
 #define IP_ADDR3                    200
 
 /*NETMASK*/
@@ -18,25 +17,28 @@
 /*Gateway Address*/
 #define GW_ADDR0                    192
 #define GW_ADDR1                    168
-#define GW_ADDR2                    137
+#define GW_ADDR2                    123
 #define GW_ADDR3                      1
 /* USER CODE END 0 */
 
 
-
-#define ETHERNET_PHY_ADDRESS       0x00 /* Relative to STM324xG-EVAL Board */
+/*
+ * 在浩普的407开发板上的地址是0 使用微雪的8720模块则地址可能是1（未测试）
+ */
+#define ETHERNET_PHY_ADDRESS       0x00
 
 /*
-	ETH_MDIO -------------------------> PA2
-	ETH_MDC --------------------------> PC1
-	ETH_MII_RX_CLK/ETH_RMII_REF_CLK---> PA1
-	ETH_MII_RX_DV/ETH_RMII_CRS_DV ----> PA7
-	ETH_MII_RXD0/ETH_RMII_RXD0 -------> PC4
-	ETH_MII_RXD1/ETH_RMII_RXD1 -------> PC5
-	ETH_MII_TX_EN/ETH_RMII_TX_EN -----> PG11
-	ETH_MII_TXD0/ETH_RMII_TXD0 -------> PG13
-	ETH_MII_TXD1/ETH_RMII_TXD1 -------> PG14
-																						*/
+ *  ETH_MDIO -------------------------> PA2
+ *  ETH_MDC --------------------------> PC1
+ *  ETH_MII_RX_CLK/ETH_RMII_REF_CLK---> PA1
+ *  ETH_MII_RX_DV/ETH_RMII_CRS_DV ----> PA7
+ *  ETH_MII_RXD0/ETH_RMII_RXD0 -------> PC4
+ *  ETH_MII_RXD1/ETH_RMII_RXD1 -------> PC5
+ *  ETH_MII_TX_EN/ETH_RMII_TX_EN -----> PG11
+ *  ETH_MII_TXD0/ETH_RMII_TXD0 -------> PG13
+ *  ETH_MII_TXD1/ETH_RMII_TXD1 -------> PG14
+ */
+ 
 /* ETH_MDIO */
 #define ETH_MDIO_GPIO_CLK               RCC_AHB1Periph_GPIOA
 #define ETH_MDIO_PORT                   GPIOA
@@ -101,7 +103,8 @@
 #define ETH_RMII_TXD1_SOURCE            GPIO_PinSource14
 
 void lan8720_gpio_init(void);
-void lan8720_mac_init(void);
+void lan8720_macdma_init(void);
+void ETH_BSP_Config(void);
 //void ETH_link_callback(struct netif *netif);
 
 #endif

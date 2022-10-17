@@ -44,6 +44,7 @@
  */
 
 #include "lwip/opt.h"
+#include <string.h>
 
 #if 1 /* don't build, this is only a skeleton, see previous comment */
 
@@ -56,9 +57,21 @@
 #include "lwip/etharp.h"
 #include "netif/ppp/pppoe.h"
 
+#include "lan8720.h"
+#include "eth.h"
+#include "stm32f4x7_eth.h"
+#include "ethernetif.h"
+
+
 /* Define those to better describe your network interface. */
 #define IFNAME0 'e'
 #define IFNAME1 'n'
+
+/* Global pointers to track current transmit and receive descriptors */
+extern ETH_DMADESCTypeDef  *DMATxDescToSet;
+extern ETH_DMADESCTypeDef  *DMARxDescToGet;
+/* Global pointer for last received frame infos */
+extern ETH_DMA_Rx_Frame_infos *DMA_RX_FRAME_infos;
 
 /**
  * Helper struct to hold private data used to operate your ethernet interface.
@@ -66,13 +79,14 @@
  * as it is already kept in the struct netif.
  * But this is only an example, anyway...
  */
-struct ethernetif {
-  struct eth_addr *ethaddr;
-  /* Add whatever per-interface state that is needed here. */
+struct ethernetif
+{
+    struct eth_addr *ethaddr;
+    /* Add whatever per-interface state that is needed here. */
 };
 
 /* Forward declarations. */
-static void  ethernetif_input(struct netif *netif);
+//static void  ethernetif_input(struct netif *netif);
 
 /**
  * In this function, the hardware should be initialized.
@@ -84,37 +98,49 @@ static void  ethernetif_input(struct netif *netif);
 static void
 low_level_init(struct netif *netif)
 {
-  struct ethernetif *ethernetif = netif->state;
+    //struct ethernetif *ethernetif = netif->state;
 
-  /* set MAC hardware address length */
-  netif->hwaddr_len = ETHARP_HWADDR_LEN;
+    /* set MAC hardware address length */
+    netif->hwaddr_len = ETHARP_HWADDR_LEN;
 
-  /* set MAC hardware address */
-  netif->hwaddr[0] = ;
-  ...
-  netif->hwaddr[5] = ;
+    /* set MAC hardware address */
+    netif->hwaddr[0] =  MAC_ADDR0;
+    netif->hwaddr[1] =  MAC_ADDR1;
+    netif->hwaddr[2] =  MAC_ADDR2;
+    netif->hwaddr[3] =  MAC_ADDR3;
+    netif->hwaddr[4] =  MAC_ADDR4;
+    netif->hwaddr[5] =  MAC_ADDR5;
 
-  /* maximum transfer unit */
-  netif->mtu = 1500;
+    /* maximum transfer unit */
+    netif->mtu = 1500;
 
-  /* device capabilities */
-  /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
-  netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
+    netif->hwaddr_len = ETH_HWADDR_LEN;
+
+    /* device capabilities */
+    /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
+#if LWIP_ARP
+    netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
+#else
+    netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_LINK_UP;
+#endif /* LWIP_ARP */
 
 #if LWIP_IPV6 && LWIP_IPV6_MLD
-  /*
-   * For hardware/netifs that implement MAC filtering.
-   * All-nodes link-local is handled by default, so we must let the hardware know
-   * to allow multicast packets in.
-   * Should set mld_mac_filter previously. */
-  if (netif->mld_mac_filter != NULL) {
-    ip6_addr_t ip6_allnodes_ll;
-    ip6_addr_set_allnodes_linklocal(&ip6_allnodes_ll);
-    netif->mld_mac_filter(netif, &ip6_allnodes_ll, NETIF_ADD_MAC_FILTER);
-  }
+    /*
+     * For hardware/netifs that implement MAC filtering.
+     * All-nodes link-local is handled by default, so we must let the hardware know
+     * to allow multicast packets in.
+     * Should set mld_mac_filter previously. */
+    if (netif->mld_mac_filter != NULL)
+    {
+        ip6_addr_t ip6_allnodes_ll;
+        ip6_addr_set_allnodes_linklocal(&ip6_allnodes_ll);
+        netif->mld_mac_filter(netif, &ip6_allnodes_ll, NETIF_ADD_MAC_FILTER);
+    }
 #endif /* LWIP_IPV6 && LWIP_IPV6_MLD */
 
-  /* Do whatever else is needed to initialize interface. */
+    /* Do whatever else is needed to initialize interface. */
+
+    ETH_Start();
 }
 
 /**
@@ -136,41 +162,92 @@ low_level_init(struct netif *netif)
 static err_t
 low_level_output(struct netif *netif, struct pbuf *p)
 {
-  struct ethernetif *ethernetif = netif->state;
-  struct pbuf *q;
+    err_t errval;
+    struct pbuf *q;
+    //struct ethernetif *ethernetif = netif->state;
+    u8 *buffer = (u8 *)(DMATxDescToSet->Buffer1Addr);
 
-  initiate transfer();
+    uint32_t bufferoffset = 0;
+    uint32_t framelength = 0;
+    uint32_t byteslefttocopy = 0;
+    uint32_t payloadoffset = 0;
 
-#if ETH_PAD_SIZE
-  pbuf_remove_header(p, ETH_PAD_SIZE); /* drop the padding word */
-#endif
+    __IO ETH_DMADESCTypeDef *DmaTxDesc;
 
-  for (q = p; q != NULL; q = q->next) {
-    /* Send the data from the pbuf to the interface, one pbuf at a
-       time. The size of the data in each pbuf is kept in the ->len
-       variable. */
-    send data from(q->payload, q->len);
-  }
-
-  signal that packet should be sent();
-
-  MIB2_STATS_NETIF_ADD(netif, ifoutoctets, p->tot_len);
-  if (((u8_t *)p->payload)[0] & 1) {
-    /* broadcast or multicast packet*/
-    MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
-  } else {
-    /* unicast packet */
-    MIB2_STATS_NETIF_INC(netif, ifoutucastpkts);
-  }
-  /* increase ifoutdiscards or ifouterrors on error */
+    DmaTxDesc = DMATxDescToSet;
 
 #if ETH_PAD_SIZE
-  pbuf_add_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
+    pbuf_remove_header(p, ETH_PAD_SIZE); /* drop the padding word */
 #endif
 
-  LINK_STATS_INC(link.xmit);
+    for (q = p; q != NULL; q = q->next)
+    {
 
-  return ERR_OK;
+        /* Is this buffer available? If not, goto error */
+        if ((DmaTxDesc->Status & ETH_DMATxDesc_OWN) != (u32)RESET)
+        {
+            errval = ERR_BUF;
+            goto error;
+        }
+
+        /* Send the data from the pbuf to the interface, one pbuf at a
+           time. The size of the data in each pbuf is kept in the ->len
+           variable. */
+        /* Get bytes in current lwIP buffer */
+        byteslefttocopy = q->len;
+        payloadoffset = 0;
+
+        while ((byteslefttocopy + bufferoffset) > ETH_TX_BUF_SIZE)
+        {
+            /* Copy data to Tx buffer*/
+            memcpy((uint8_t *)((uint8_t *)buffer + bufferoffset),
+                   (uint8_t *)((uint8_t *)q->payload + payloadoffset),
+                   (ETH_TX_BUF_SIZE - bufferoffset));
+            /* Point to next descriptor */
+            DmaTxDesc = (ETH_DMADESCTypeDef *)(DmaTxDesc->Buffer2NextDescAddr);
+
+            /* Check if the buffer is available */
+            if ((DmaTxDesc->Status & ETH_DMATxDesc_OWN) != (uint32_t)RESET)
+            {
+                errval = ERR_USE;
+                goto error;
+            }
+
+            buffer = (uint8_t *)(DmaTxDesc->Buffer1Addr);
+
+            byteslefttocopy = byteslefttocopy - (ETH_TX_BUF_SIZE - bufferoffset);
+            payloadoffset = payloadoffset + (ETH_TX_BUF_SIZE - bufferoffset);
+            framelength = framelength + (ETH_TX_BUF_SIZE - bufferoffset);
+            bufferoffset = 0;
+        }
+
+        /* Copy the remaining bytes */
+        memcpy((u8_t *)((u8_t *)buffer + bufferoffset), (u8_t *)((u8_t *)q->payload + payloadoffset), byteslefttocopy);
+        bufferoffset = bufferoffset + byteslefttocopy;
+        framelength = framelength + byteslefttocopy;
+    }
+
+
+#if ETH_PAD_SIZE
+    pbuf_add_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
+#endif
+
+    /* Prepare transmit descriptors to give to DMA*/
+    ETH_Prepare_Transmit_Descriptors(framelength);
+
+    return ERR_OK;
+
+error:
+
+    if ((ETH->DMASR & ETH_DMASR_TUS) != (uint32_t)RESET)
+    {
+        /* Clear TUS ETHERNET DMA flag */
+        ETH->DMASR = ETH_DMASR_TUS;
+
+        /* Resume DMA transmission*/
+        ETH->DMATPDR = 0;
+    }
+    return errval;
 }
 
 /**
@@ -181,66 +258,105 @@ low_level_output(struct netif *netif, struct pbuf *p)
  * @return a pbuf filled with the received packet (including MAC header)
  *         NULL on memory error
  */
-static struct pbuf *
-low_level_input(struct netif *netif)
+static struct pbuf *low_level_input(struct netif *netif)
 {
-  struct ethernetif *ethernetif = netif->state;
-  struct pbuf *p, *q;
-  u16_t len;
+    //struct ethernetif *ethernetif = netif->state;
+    struct pbuf *p, *q;
+    __IO ETH_DMADESCTypeDef *DMARxDesc;
+    uint32_t bufferoffset = 0;
+    uint32_t payloadoffset = 0;
+    uint32_t byteslefttocopy = 0;
+    u16_t len = 0;
+    u8 *buffer;
+    FrameTypeDef frame;
 
-  /* Obtain the size of the packet and put it into the "len"
-     variable. */
-  len = ;
+    /* get received frame */
+    frame = ETH_Get_Received_Frame();
+    /* Obtain the size of the packet and put it into the "len"
+       variable. */
+    len = frame.length;
+    buffer = (u8 *)frame.buffer;
+    
+    printf("recived len : %d\n",len);
+
 
 #if ETH_PAD_SIZE
-  len += ETH_PAD_SIZE; /* allow room for Ethernet padding */
+    len += ETH_PAD_SIZE; /* allow room for Ethernet padding */
 #endif
 
-  /* We allocate a pbuf chain of pbufs from the pool. */
-  p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
+    /* We allocate a pbuf chain of pbufs from the pool. */
+    p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
 
-  if (p != NULL) {
+    if (p != NULL)
+    {
+        DMARxDesc = frame.descriptor;
+        bufferoffset = 0;
 
 #if ETH_PAD_SIZE
-    pbuf_remove_header(p, ETH_PAD_SIZE); /* drop the padding word */
+        pbuf_remove_header(p, ETH_PAD_SIZE); /* drop the padding word */
 #endif
 
-    /* We iterate over the pbuf chain until we have read the entire
-     * packet into the pbuf. */
-    for (q = p; q != NULL; q = q->next) {
-      /* Read enough bytes to fill this pbuf in the chain. The
-       * available data in the pbuf is given by the q->len
-       * variable.
-       * This does not necessarily have to be a memcpy, you can also preallocate
-       * pbufs for a DMA-enabled MAC and after receiving truncate it to the
-       * actually received size. In this case, ensure the tot_len member of the
-       * pbuf is the sum of the chained pbuf len members.
-       */
-      read data into(q->payload, q->len);
-    }
-    acknowledge that packet has been read();
+        /* We iterate over the pbuf chain until we have read the entire
+         * packet into the pbuf. */
+        for (q = p; q != NULL; q = q->next)
+        {
+            /* Read enough bytes to fill this pbuf in the chain. The
+             * available data in the pbuf is given by the q->len
+             * variable.
+             * This does not necessarily have to be a memcpy, you can also preallocate
+             * pbufs for a DMA-enabled MAC and after receiving truncate it to the
+             * actually received size. In this case, ensure the tot_len member of the
+             * pbuf is the sum of the chained pbuf len members.
+             */
+            byteslefttocopy = q->len;
+            payloadoffset = 0;
 
-    MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->tot_len);
-    if (((u8_t *)p->payload)[0] & 1) {
-      /* broadcast or multicast packet*/
-      MIB2_STATS_NETIF_INC(netif, ifinnucastpkts);
-    } else {
-      /* unicast packet*/
-      MIB2_STATS_NETIF_INC(netif, ifinucastpkts);
+            /* Check if the length of bytes to copy in current pbuf is bigger than Rx buffer size*/
+            while ((byteslefttocopy + bufferoffset) > ETH_RX_BUF_SIZE)
+            {
+                /* Copy data to pbuf*/
+                memcpy((u8_t *)((u8_t *)q->payload + payloadoffset), (u8_t *)((u8_t *)buffer + bufferoffset), (ETH_RX_BUF_SIZE - bufferoffset));
+
+                /* Point to next descriptor */
+                DMARxDesc = (ETH_DMADESCTypeDef *)(DMARxDesc->Buffer2NextDescAddr);
+                buffer = (unsigned char *)(DMARxDesc->Buffer1Addr);
+
+                byteslefttocopy = byteslefttocopy - (ETH_RX_BUF_SIZE - bufferoffset);
+                payloadoffset = payloadoffset + (ETH_RX_BUF_SIZE - bufferoffset);
+                bufferoffset = 0;
+            }
+            /* Copy remaining data in pbuf */
+            memcpy((u8_t *)((u8_t *)q->payload + payloadoffset), (u8_t *)((u8_t *)buffer + bufferoffset), byteslefttocopy);
+            bufferoffset = bufferoffset + byteslefttocopy;
+
+        }
     }
+
+    /* Release descriptors to DMA */
+    DMARxDesc = frame.descriptor;
+
 #if ETH_PAD_SIZE
     pbuf_add_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
 #endif
 
-    LINK_STATS_INC(link.recv);
-  } else {
-    drop packet();
-    LINK_STATS_INC(link.memerr);
-    LINK_STATS_INC(link.drop);
-    MIB2_STATS_NETIF_INC(netif, ifindiscards);
-  }
+    /* Set Own bit in Rx descriptors: gives the buffers back to DMA */
+    for (int i = 0; i < DMA_RX_FRAME_infos->Seg_Count; i++)
+    {
+        DMARxDesc->Status = ETH_DMARxDesc_OWN;
+        DMARxDesc = (ETH_DMADESCTypeDef *)(DMARxDesc->Buffer2NextDescAddr);
+    }
+    /* Clear Segment_Count */
+    DMA_RX_FRAME_infos->Seg_Count = 0;
 
-  return p;
+    /* When Rx Buffer unavailable flag is set: clear it and resume reception */
+    if ((ETH->DMASR & ETH_DMASR_RBUS) != (u32)RESET)
+    {
+        /* Clear RBUS ETHERNET DMA flag */
+        ETH->DMASR = ETH_DMASR_RBUS;
+        /* Resume DMA reception */
+        ETH->DMARPDR = 0;
+    }
+    return p;
 }
 
 /**
@@ -252,26 +368,27 @@ low_level_input(struct netif *netif)
  *
  * @param netif the lwip network interface structure for this ethernetif
  */
-static void
-ethernetif_input(struct netif *netif)
+void ethernetif_input(struct netif *netif)
 {
-  struct ethernetif *ethernetif;
-  struct eth_hdr *ethhdr;
-  struct pbuf *p;
+    //struct ethernetif *ethernetif;
+    //struct eth_hdr *ethhdr;
+    struct pbuf *p;
 
-  ethernetif = netif->state;
+    //ethernetif = netif->state;
 
-  /* move received packet into a new pbuf */
-  p = low_level_input(netif);
-  /* if no packet could be read, silently ignore this */
-  if (p != NULL) {
-    /* pass all packets to ethernet_input, which decides what packets it supports */
-    if (netif->input(p, netif) != ERR_OK) {
-      LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error\n"));
-      pbuf_free(p);
-      p = NULL;
+    /* move received packet into a new pbuf */
+    p = low_level_input(netif);
+    /* if no packet could be read, silently ignore this */
+    if (p != NULL)
+    {
+        /* pass all packets to ethernet_input, which decides what packets it supports */
+        if (netif->input(p, netif) != ERR_OK)
+        {
+            LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error\n"));
+            pbuf_free(p);
+            p = NULL;
+        }
     }
-  }
 }
 
 /**
@@ -289,49 +406,50 @@ ethernetif_input(struct netif *netif)
 err_t
 ethernetif_init(struct netif *netif)
 {
-  struct ethernetif *ethernetif;
+    struct ethernetif *ethernetif;
 
-  LWIP_ASSERT("netif != NULL", (netif != NULL));
+    LWIP_ASSERT("netif != NULL", (netif != NULL));
 
-  ethernetif = mem_malloc(sizeof(struct ethernetif));
-  if (ethernetif == NULL) {
-    LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_init: out of memory\n"));
-    return ERR_MEM;
-  }
+    ethernetif = mem_malloc(sizeof(struct ethernetif));
+    if (ethernetif == NULL)
+    {
+        LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_init: out of memory\n"));
+        return ERR_MEM;
+    }
 
 #if LWIP_NETIF_HOSTNAME
-  /* Initialize interface hostname */
-  netif->hostname = "lwip";
+    /* Initialize interface hostname */
+    netif->hostname = "lwip";
 #endif /* LWIP_NETIF_HOSTNAME */
 
-  /*
-   * Initialize the snmp variables and counters inside the struct netif.
-   * The last argument should be replaced with your link speed, in units
-   * of bits per second.
-   */
-  MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
+    /*
+     * Initialize the snmp variables and counters inside the struct netif.
+     * The last argument should be replaced with your link speed, in units
+     * of bits per second.
+     */
+    MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
 
-  netif->state = ethernetif;
-  netif->name[0] = IFNAME0;
-  netif->name[1] = IFNAME1;
-  /* We directly use etharp_output() here to save a function call.
-   * You can instead declare your own function an call etharp_output()
-   * from it if you have to do some checks before sending (e.g. if link
-   * is available...) */
+    netif->state = ethernetif;
+    netif->name[0] = IFNAME0;
+    netif->name[1] = IFNAME1;
+    /* We directly use etharp_output() here to save a function call.
+     * You can instead declare your own function an call etharp_output()
+     * from it if you have to do some checks before sending (e.g. if link
+     * is available...) */
 #if LWIP_IPV4
-  netif->output = etharp_output;
+    netif->output = etharp_output;
 #endif /* LWIP_IPV4 */
 #if LWIP_IPV6
-  netif->output_ip6 = ethip6_output;
+    netif->output_ip6 = ethip6_output;
 #endif /* LWIP_IPV6 */
-  netif->linkoutput = low_level_output;
+    netif->linkoutput = low_level_output;
 
-  ethernetif->ethaddr = (struct eth_addr *) & (netif->hwaddr[0]);
+    ethernetif->ethaddr = (struct eth_addr *) & (netif->hwaddr[0]);
 
-  /* initialize the hardware */
-  low_level_init(netif);
+    /* initialize the hardware */
+    low_level_init(netif);
 
-  return ERR_OK;
+    return ERR_OK;
 }
 
 #endif /* 0 */
