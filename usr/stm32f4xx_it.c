@@ -32,6 +32,10 @@
 #include "main.h"
 #include "delay.h"
 
+#define SVC_Handler unused1
+#define PendSV_Handler unused2
+#define SysTick_Handler unused3
+
 /** @addtogroup Template_Project
   * @{
   */

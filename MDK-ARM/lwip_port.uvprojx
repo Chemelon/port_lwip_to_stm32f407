@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F40XX,USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\bsp_drivers;..\STM32F4xx_DSP_StdPeriph_Lib\CMSIS\Include;..\STM32F4xx_DSP_StdPeriph_Lib\inc;..\usr;..\lwip-2.1.2\include;..\lwip-2.1.2\ports</IncludePath>
+              <IncludePath>..\bsp_drivers;..\STM32F4xx_DSP_StdPeriph_Lib\CMSIS\Include;..\STM32F4xx_DSP_StdPeriph_Lib\inc;..\usr;..\lwip-2.1.2\include;..\lwip-2.1.2\ports;..\FreeRTOS\include;..\FreeRTOS\port</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -789,7 +789,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>lwip_core</GroupName>
+          <GroupName>lwip/core</GroupName>
           <Files>
             <File>
               <FileName>altcp.c</FileName>
@@ -934,7 +934,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>lwip_api</GroupName>
+          <GroupName>lwip/api</GroupName>
           <Files>
             <File>
               <FileName>api_lib.c</FileName>
@@ -984,7 +984,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>lwip_netif</GroupName>
+          <GroupName>lwip/netif</GroupName>
           <Files>
             <File>
               <FileName>bridgeif.c</FileName>
@@ -1284,7 +1284,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>lwip_ports</GroupName>
+          <GroupName>lwip/ports</GroupName>
           <Files>
             <File>
               <FileName>ethernetif.c</FileName>
@@ -1300,6 +1300,61 @@
               <FileName>cc.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\lwip-2.1.2\ports\arch\cc.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>freertos/src</GroupName>
+          <Files>
+            <File>
+              <FileName>croutine.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FreeRTOS\croutine.c</FilePath>
+            </File>
+            <File>
+              <FileName>event_groups.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FreeRTOS\event_groups.c</FilePath>
+            </File>
+            <File>
+              <FileName>list.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FreeRTOS\list.c</FilePath>
+            </File>
+            <File>
+              <FileName>queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FreeRTOS\queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>stream_buffer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FreeRTOS\stream_buffer.c</FilePath>
+            </File>
+            <File>
+              <FileName>tasks.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FreeRTOS\tasks.c</FilePath>
+            </File>
+            <File>
+              <FileName>timers.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FreeRTOS\timers.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>freertos/ports</GroupName>
+          <Files>
+            <File>
+              <FileName>port.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FreeRTOS\port\port.c</FilePath>
+            </File>
+            <File>
+              <FileName>heap_4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FreeRTOS\port\heap_4.c</FilePath>
             </File>
           </Files>
         </Group>
