@@ -172,9 +172,9 @@ ing and verifying the IP, UDP, TCP and ICMP checksums by hardware:
     ----------------------------------------
 */
 #define LWIP_DEBUG                      1
-#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_ALL
+//#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_ALL
 //#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_OFF
-//#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_WARNING
+#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_WARNING
 //#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_SERIOUS
 //#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_SEVERE
 

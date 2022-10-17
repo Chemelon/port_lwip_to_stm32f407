@@ -21,6 +21,8 @@
 #include "lwip/snmp.h"
 #include "lwip/timeouts.h"
 #include "lwip/dhcp.h"
+#include "FreeRTOS.h"
+#include "task.h"
 //#include "tcpclient.h"
 
 struct netif gnetif;
@@ -71,10 +73,32 @@ void LwIP_Init(void)
 
 }
 
+void lwip_rx_task(void *parameter)
+{
+    for (;;)
+    {
+        //调用网卡接收函数
+        if (ETH_CheckFrameReceived())
+            ethernetif_input(&gnetif);
+        //处理LwIP中定时事件
+        sys_check_timeouts();
+        vTaskDelay(5);
+    }
+}
+
+void led_toggle_task(void *parameter)
+{
+    for (;;)
+    {
+        GPIO_ToggleBits(GPIOF, GPIO_Pin_8);
+        vTaskDelay(500);
+    }
+}
+
 int main(void)
 {
-    int flag = 0;
-    int a = 0;
+    BaseType_t task_status;
+    TaskHandle_t lwip_rx_task_handle, led_toggle_task_handle;
 
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);//设置系统中断优先级分组4
     delay_init();
@@ -87,12 +111,12 @@ int main(void)
     /* 配置ETH外设的mac 和 dma 并且设置mac_addr */
     lan8720_macdma_init();
     /* 配置ETH_DMA的描述符 接下来应该调用ETH_Start启动传输就可以了 */
-    
-    
+
+
     //ETH_BSP_Config();
-    
+
     eth_dma_desc_init();
-    
+
     LwIP_Init();
 
     for (int i = 0; i < 32; i++)
@@ -100,19 +124,14 @@ int main(void)
         printf("%04x\r\n", ETH_ReadPHYRegister(ETHERNET_PHY_ADDRESS, i));
     }
     printf("system inited!\r\n");
+
+    task_status = xTaskCreate(lwip_rx_task, "lwip_rx_task", 100, NULL, 1, &lwip_rx_task_handle);
+    task_status = xTaskCreate(led_toggle_task, "led_toggle_task", 100, NULL, 1, &led_toggle_task_handle);
+    if (pdPASS == task_status)
+        vTaskStartScheduler();
     while (1)
     {
-        //调用网卡接收函数
-        if(ETH_CheckFrameReceived())
-            ethernetif_input(&gnetif);
-        //处理LwIP中定时事件
-        sys_check_timeouts();
-        a++;
-        if (a > 0xffff)
-        {
-            a = 0;
-            GPIO_ToggleBits(GPIOF, GPIO_Pin_8);
-        }
+
     };
 
 }

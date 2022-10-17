@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    Project/STM32F4xx_StdPeriph_Templates/stm32f4xx_it.c 
+  * @file    Project/STM32F4xx_StdPeriph_Templates/stm32f4xx_it.c
   * @author  MCD Application Team
   * @version V1.4.0
   * @date    04-August-2014
   * @brief   Main Interrupt Service Routines.
-  *          This file provides template for all exceptions handler and 
+  *          This file provides template for all exceptions handler and
   *          peripherals interrupt service routine.
   ******************************************************************************
   * @attention
@@ -18,8 +18,8 @@
   *
   *        http://www.st.com/software_license_agreement_liberty_v2
   *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   * See the License for the specific language governing permissions and
   * limitations under the License.
@@ -31,6 +31,7 @@
 #include "stm32f4xx_it.h"
 #include "main.h"
 #include "delay.h"
+#include "cm_backtrace.h"
 
 #define SVC_Handler unused1
 #define PendSV_Handler unused2
@@ -65,12 +66,20 @@ void NMI_Handler(void)
   * @param  None
   * @retval None
   */
+static __inline __asm uint32_t get_reg(void) {
+        MOV     r0, lr                  
+        MOV     r1, sp 
+    }
+
 void HardFault_Handler(void)
 {
-  /* Go to infinite loop when Hard Fault exception occurs */
-  while (1)
-  {
-  }
+    __IO uint32_t fault_handler_lr = 0, fault_handler_sp = 0;
+    get_reg();
+    /* Go to infinite loop when Hard Fault exception occurs */
+    cm_backtrace_fault(fault_handler_lr, fault_handler_sp);
+    while (1)
+    {
+    }
 }
 
 /**
@@ -80,10 +89,10 @@ void HardFault_Handler(void)
   */
 void MemManage_Handler(void)
 {
-  /* Go to infinite loop when Memory Manage exception occurs */
-  while (1)
-  {
-  }
+    /* Go to infinite loop when Memory Manage exception occurs */
+    while (1)
+    {
+    }
 }
 
 /**
@@ -93,10 +102,10 @@ void MemManage_Handler(void)
   */
 void BusFault_Handler(void)
 {
-  /* Go to infinite loop when Bus Fault exception occurs */
-  while (1)
-  {
-  }
+    /* Go to infinite loop when Bus Fault exception occurs */
+    while (1)
+    {
+    }
 }
 
 /**
@@ -106,10 +115,10 @@ void BusFault_Handler(void)
   */
 void UsageFault_Handler(void)
 {
-  /* Go to infinite loop when Usage Fault exception occurs */
-  while (1)
-  {
-  }
+    /* Go to infinite loop when Usage Fault exception occurs */
+    while (1)
+    {
+    }
 }
 
 /**
@@ -146,7 +155,7 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
-  
+
 }
 
 void TIM6_DAC_IRQHandler(void)
@@ -173,7 +182,7 @@ void TIM6_DAC_IRQHandler(void)
 
 /**
   * @}
-  */ 
+  */
 
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
