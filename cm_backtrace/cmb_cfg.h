@@ -30,7 +30,7 @@
 #define _CMB_CFG_H_
 
 /* print line, must config by user */
-#define cmb_println(...)               /* e.g., printf(__VA_ARGS__);printf("\r\n")  or  SEGGER_RTT_printf(0, __VA_ARGS__);SEGGER_RTT_WriteString(0, "\r\n")  */
+#define cmb_println(...)               do{printf(__VA_ARGS__);printf("\r\n");}while(0)
 /* enable bare metal(no OS) platform */
 /* #define CMB_USING_BARE_METAL_PLATFORM */
 /* enable OS platform */

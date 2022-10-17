@@ -23,7 +23,12 @@
 #include "lwip/dhcp.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "cm_backtrace.h"
 //#include "tcpclient.h"
+
+#define HARDWARE_VERSION               "V1.0.0"
+#define SOFTWARE_VERSION               "V0.1.0"
+
 
 struct netif gnetif;
 ip4_addr_t ipaddr;
@@ -86,6 +91,7 @@ void lwip_rx_task(void *parameter)
     }
 }
 
+
 void led_toggle_task(void *parameter)
 {
     for (;;)
@@ -101,6 +107,7 @@ int main(void)
     TaskHandle_t lwip_rx_task_handle, led_toggle_task_handle;
 
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);//设置系统中断优先级分组4
+    cm_backtrace_init("CmBacktrace", HARDWARE_VERSION, SOFTWARE_VERSION);
     delay_init();
     TIM6_it_init();
     usart3_init(115200);
@@ -111,9 +118,6 @@ int main(void)
     /* 配置ETH外设的mac 和 dma 并且设置mac_addr */
     lan8720_macdma_init();
     /* 配置ETH_DMA的描述符 接下来应该调用ETH_Start启动传输就可以了 */
-
-
-    //ETH_BSP_Config();
 
     eth_dma_desc_init();
 

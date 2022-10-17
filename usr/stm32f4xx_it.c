@@ -66,6 +66,7 @@ void NMI_Handler(void)
   * @param  None
   * @retval None
   */
+#ifdef USE_CUSTOM_TRACE_ENTRY
 static __inline __asm uint32_t get_reg(void) {
         MOV     r0, lr                  
         MOV     r1, sp 
@@ -81,6 +82,7 @@ void HardFault_Handler(void)
     {
     }
 }
+#endif
 
 /**
   * @brief  This function handles Memory Manage exception.
