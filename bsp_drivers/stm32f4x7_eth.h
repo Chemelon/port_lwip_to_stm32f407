@@ -222,6 +222,8 @@ typedef struct {
 /** 
   * @brief  ETH DMA Descriptors data structure definition
   */ 
+#define DEFAULT_DESCTYPE
+#ifdef DEFAULT_DESCTYPE
 typedef struct  {
   __IO uint32_t   Status;                /*!< Status */
   uint32_t   ControlBufferSize;     /*!< Control and Buffer1, Buffer2 lengths */
@@ -235,8 +237,66 @@ typedef struct  {
   uint32_t   TimeStampHigh;         /* Time Stamp High value for transmit and receive */
 #endif /* USE_ENHANCED_DMA_DESCRIPTORS */
 } ETH_DMADESCTypeDef;
-
-
+#else
+typedef struct
+{
+    union
+    {
+        __IO uint32_t Status; /*!< Status */
+        __IO struct
+        {
+            int DB : 1;
+            int UF : 1;
+            int ED : 1;
+            int CC : 4;
+            int VF : 1;
+            int EC : 1;
+            int LCO : 1;
+            int NC : 1;
+            int LCA : 1;
+            int IPE : 1;
+            int FF : 1;
+            int JT : 1;
+            int ES : 1;
+            
+            int IHE : 1;
+            int TTSS : 1;
+            int RES : 2;
+            int TCH : 1;
+            int TER : 1;
+            int CIC : 2;
+            int RES2 : 1;
+            int TTSE : 1;
+            int DP : 1;
+            int DC : 1;
+            int FS : 1;
+            int LS : 1;
+            int IC : 1;
+            int OWN : 1;
+        } Status_detail;
+    };
+    union
+    {
+        uint32_t ControlBufferSize; /*!< Control and Buffer1, Buffer2 lengths */
+        __IO struct
+        {
+            int CNT1 : 13;
+            int NC1 : 6;
+            int CNT2 : 13;
+            int NC2 : 5;
+        } ControlBufferSize_detail;
+    };
+    uint32_t Buffer1Addr;         /*!< Buffer1 address pointer */
+    uint32_t Buffer2NextDescAddr; /*!< Buffer2 or next descriptor address pointer */
+/* Enhanced ETHERNET DMA PTP Descriptors */
+#ifdef USE_ENHANCED_DMA_DESCRIPTORS
+    uint32_t ExtendedStatus; /* Extended status for PTP receive descriptor */
+    uint32_t Reserved1;      /* Reserved */
+    uint32_t TimeStampLow;   /* Time Stamp Low value for transmit and receive */
+    uint32_t TimeStampHigh;  /* Time Stamp High value for transmit and receive */
+#endif                       /* USE_ENHANCED_DMA_DESCRIPTORS */
+} ETH_DMADESCTypeDef;
+#endif
 typedef struct{
   uint32_t length;
   uint32_t buffer;
